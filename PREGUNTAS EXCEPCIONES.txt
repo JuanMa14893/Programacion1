@@ -1,0 +1,110 @@
+JUAN MANUEL LONDOÑO CASTAÑEDA
+PROGRAMACION 1
+PREGUNTAS DE LAS EXCEPCIONES
+---------------
+PRIMER PROBLEMA:
+---------------
+1. ¿Qué está mal con este código y cómo sabrías qué salió mal en producción?
+El problema es que el bloque except no especifica el tipo de error que debe capturar. Esto hace que atrape absolutamente cualquier excepción, incluso interrupciones del sistema o errores graves que deberían detener el programa. En producción, si ocurre un fallo, solo se mostrará el mensaje “Ocurrió un error”, sin ningún detalle adicional. No habría forma de saber qué fue lo que falló ni en qué parte del código sucedió, lo que complica encontrar la causa del problema.
+
+2. ¿Qué pasa si hay un error de tipeo en “resultado”?
+Si se escribe mal el nombre de la variable, se produciría un error de tipo “variable no definida”. Sin embargo, como el except captura todos los errores, el programa no mostrará el mensaje real del fallo. Simplemente imprimirá “Ocurrió un error” y continuará como si nada hubiera pasado. Esto oculta errores de programación y da una falsa sensación de que el código funciona correctamente.
+
+3. ¿Cómo afecta esto a la depuración?
+Afecta negativamente porque se pierde toda la información útil para entender el error. No se muestra el tipo de excepción, la causa, ni la línea donde ocurrió. Esto hace que encontrar y corregir fallos sea mucho más difícil. En resumen, el error se oculta y la depuración se vuelve lenta y confusa.
+
+
+-------------------
+SEGUNDO PROBLEMA 
+-------------------
+El error está en que el bloque except captura todas las excepciones bajo un mismo tipo general
+
+Cuál es el problema aquí?
+El problema es que el bloque de manejo de errores captura todas las excepciones de forma general sin distinguir su causa, por lo que cualquier tipo de fallo, como errores de archivo, de datos o de cálculo, se trata exactamente igual. Esto impide saber qué ocurrió realmente y da la impresión de que el programa funciona correctamente cuando en realidad puede haber errores importantes ocultos.
+
+1. ¿Qué tipos específicos de errores pueden ocurrir?
+En este caso pueden ocurrir varios tipos de errores: un error al intentar abrir un archivo que no existe o no puede leerse, un error al convertir datos no numéricos a enteros, o un error de división entre cero al calcular un promedio. Cada uno de estos errores tiene causas y consecuencias diferentes, por lo que deben manejarse de manera distinta para evitar resultados incorrectos o pérdida de información.
+
+2. ¿Deberían manejarse todos de la misma manera?
+No deberían manejarse igual, porque cada tipo de error requiere una respuesta específica. Un archivo inexistente debe notificar al usuario o permitir seleccionar otro, un dato no válido debe generar una advertencia para corregir el formato, y una división entre cero debe resolverse revisando la lógica del cálculo o los datos de entrada. Si todos se tratan igual, el programa no podrá reaccionar adecuadamente a la causa real del problema.
+
+3. ¿Qué información se pierde al capturar todo?
+Al capturar todas las excepciones en un solo bloque se pierde la información valiosa del error, como su tipo, la descripción exacta y el punto donde ocurrió. Sin esos detalles no se puede identificar la causa del fallo, lo que dificulta la depuración y la corrección del código. Además, los mensajes genéricos al usuario no ayudan a entender ni resolver el problema.
+
+---------------
+TERCER PROBLEMA
+---------------
+
+aunque ocurra una falla al guardar, el programa seguirá ejecutándose como si todo hubiera salido bien. Esto provoca que los errores pasen desapercibidos y el usuario piense que su información fue guardada correctamente, cuando en realidad se perdió.
+
+1. ¿Qué debería suceder cuando falla el guardado?
+Cuando el guardado falla, el programa debería detener el proceso correspondiente o al menos registrar el error para que pueda corregirse. Es importante que el sistema no continúe normalmente, porque eso generaría una falsa sensación de éxito. Lo correcto sería registrar el fallo en un log o lanzar una excepción para que el error sea manejado por un nivel superior del programa.
+
+2. ¿Cómo informarías al usuario?
+El usuario debería recibir un mensaje claro y comprensible que indique que el guardado no se realizó correctamente. Esto puede ser una notificación en pantalla o un mensaje dentro de la aplicación explicando que ocurrió un problema al guardar los datos y, si es posible, ofreciendo una solución o una opción para reintentar. La transparencia con el usuario evita confusión y pérdida de confianza.
+
+3. ¿Es este error algo que deberías manejar?
+Sí, pero no de forma silenciosa. Es un error importante que debe manejarse de manera adecuada, ya que afecta la integridad de los datos del usuario. Sin embargo, no siempre debe resolverse en ese mismo punto del código; a veces conviene notificar el error para que sea tratado en un nivel superior del sistema o registrado para su análisis posterior. Lo esencial es no ocultarlo ni permitir que el programa continúe como si nada hubiera pasado.
+
+---------------
+CUARTO PROBLEMA
+---------------
+
+¿Cuándo se ejecuta cada bloque?
+
+Si no ocurre ningún error dentro del try, se ejecuta el bloque else, el cual sirve para definir acciones que solo deben realizarse cuando todo salió bien. Finalmente, el bloque finally se ejecuta siempre, ocurra o no un error, y se utiliza generalmente para liberar recursos o cerrar conexiones abiertas.
+
+1. ¿En qué se diferencia else de finally?
+La diferencia principal es que else solo se ejecuta cuando no ocurre ningún error en el bloque try, mientras que finally se ejecuta siempre, sin importar si hubo o no una excepción. El else se usa para indicar la parte del código que debe ejecutarse únicamente si el try fue exitoso, y el finally se emplea para acciones que deben cumplirse en cualquier circunstancia
+
+2. ¿Cuándo usarías cada uno?
+Usaría else cuando quiero realizar una acción que depende de que el bloque try haya terminado correctamente, por ejemplo, mostrar un mensaje de éxito o procesar resultados obtenidos sin errores. En cambio, usaría finally cuando necesito asegurarme de que se ejecute una acción obligatoria al final del proceso, como liberar memoria, cerrar un archivo, detener un servicio o restaurar un estado del sistema
+
+3.Esto significa que el finally tiene prioridad de ejecución y siempre se cumple, incluso si el flujo del programa intenta salir de la función. Este comportamiento garantiza que las tareas de limpieza o cierre se realicen siempre, evitando fugas de recursos o procesos incompletos.
+------------
+PROBLEMA 5  
+------------
+Qué está mal con estos usos de raise?
+El problema es que se están lanzando excepciones de forma incorrecta o poco útil. En primer lugar, se usan excepciones genéricas que no indican con precisión qué tipo de error ocurrió, lo cual dificulta identificar la causa real del problema. En segundo lugar, al reemplazar una excepción por otra sin conservar la original, se pierde información importante del error inicial, como el tipo y el lugar donde ocurrió.
+
+1. ¿Qué tipo de excepción sería más apropiado?
+Sería mejor utilizar excepciones específicas que describan claramente la naturaleza del error. Por ejemplo, para una edad negativa se podría usar ValueError, para datos fuera de rango OverflowError, o incluso crear excepciones personalizadas que representen situaciones concretas del programa
+
+2. ¿Qué información debería incluir el mensaje?
+El mensaje debe ser claro, específico y aportar contexto suficiente para entender qué salió mal Esto facilita que el desarrollador o el usuario comprendan el origen del error y puedan actuar en consecuencia sin tener que revisar el código fuente.
+
+3. ¿Cómo ayuda esto a quien llama la función?
+Ayuda porque quien llama la función puede saber exactamente qué tipo de error ocurrió y tomar decisiones adecuadas en función de ello. Si las excepciones están bien definidas y los mensajes son informativos, el código que usa la función puede reaccionar correctamente, ya sea mostrando un aviso al usuario, reintentando la operación o registrando el error para su análisis.
+----------------
+SEXTO PROBLEMA
+----------------
+¿Deberías siempre capturar y consumir errores?
+
+no siempre se deben capturar ni consumir los errores. Atraparlos sin un propósito claro puede ocultar fallos importantes y dificultar la detección de problemas reales. En algunos casos, dejar que la excepción se propague permite que niveles superiores del programa la manejen de forma más adecuada.
+
+1. ¿Cuándo deberías capturar y manejar?
+Debería capturar y manejar los errores cuando puedes resolver el problema directamente dentro del mismo bloque de código. Por ejemplo, si un error es previsible y tienes una forma lógica de continuar, como saltar un dato inválido dentro de un ciclo o pedir nuevamente una entrada al usuario.
+
+2. ¿Cuándo deberías capturar, registrar y re-lanzar?
+Deberías capturar, registrar y luego volver a lanzar la excepción cuando no puedas resolver el problema, pero sí necesites dejar evidencia de lo que ocurrió. Registrar el error sirve para dejar un historial o bitácora que ayude a diagnosticar la causa más adelante
+
+3. ¿Cuándo NO deberías capturar en absoluto?
+No deberías capturar una excepción cuando hacerlo no aporta ningún valor o cuando el error debe detener el programa para evitar daños mayores, por ejemplo en casos de errores de programación, fallos del sistema o situaciones que requieren revisión del código.
+
+------------------
+SEPTIMO PROBLEMA
+------------------
+
+¿Qué pasa cuando una excepción ocurre en un bucle?
+Cuando una excepción ocurre dentro de un bucle, el comportamiento depende de dónde se coloque el bloque try-except. Si el try está fuera del bucle, una sola excepción detendrá toda la ejecución y los elementos restantes no se procesarán. En cambio, si el try está dentro del bucle, el error solo afectará al elemento que lo generó y el ciclo continuará con los demás.
+
+1. ¿Debería un error detener todo el proceso?
+No necesariamente. Depende del tipo de tarea que se esté realizando. Si el error afecta solo a un elemento y los demás pueden seguir procesándose, es mejor manejarlo dentro del bucle para que el programa continúe.
+
+2. ¿Cómo reportarías múltiples errores?
+Una buena práctica es registrar o almacenar los errores que ocurren durante el recorrido del bucle en una lista o archivo de log. Así, el programa puede terminar el proceso completo sin detenerse y al final mostrar un resumen de todos los fallos, indicando qué elementos fallaron y por qué.
+
+3. ¿Qué pasa si TODOS los elementos fallan?
+Si todos los elementos generan error, significa que hay un problema más profundo, ya sea con la entrada de datos o con la lógica del programa. En ese caso, no tiene sentido seguir intentando procesarlos, y se debería detener la ejecución, informar claramente al usuario sobre el fallo general y mostrar los errores registrados.
+
+
