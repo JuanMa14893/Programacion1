@@ -1,0 +1,1016 @@
+
+def calculadora_cientifica(operacion, a, b):
+    """
+    Realiza operaciones matemáticas con validación.
+    
+    Args:
+        operacion (str): Tipo de operación
+        a (int/float): Primer operando
+        b (int/float): Segundo operando
+    
+    Returns:
+        float: Resultado con 2 decimales
+    
+    Raises:
+        ValueError: Operación inválida o tipos incorrectos
+        ZeroDivisionError: División por cero
+    """
+    # Validar tipos de datos
+    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
+        raise ValueError("Los parámetros deben ser numéricos (int o float)")
+    
+    # Diccionario de operaciones válidas
+    operaciones_validas = {
+        "suma": lambda x, y: x + y,
+        "resta": lambda x, y: x - y,
+        "multiplicacion": lambda x, y: x * y,
+        "division": lambda x, y: x / y,
+        "potencia": lambda x, y: x ** y,
+        "modulo": lambda x, y: x % y
+    }
+    
+    # Validar operación
+    if operacion not in operaciones_validas:
+        raise ValueError(f"Operación inválida: '{operacion}'. " +
+                        f"Operaciones válidas: {', '.join(operaciones_validas.keys())}")
+    
+    # Ejecutar operación con manejo de división por cero
+    try:
+        resultado = operaciones_validas[operacion](a, b)
+        return round(float(resultado), 2)
+    except ZeroDivisionError:
+        raise ZeroDivisionError(f"No se puede realizar {operacion} por cero")
+
+        # Pruebas básicas
+print(calculadora_cientifica("suma", 5, 3))           # 8.0
+print(calculadora_cientifica("division", 10, 3))      # 3.33
+print(calculadora_cientifica("potencia", 2, 3))       # 8.0
+
+# Pruebas de error
+try:
+    calculadora_cientifica("division", 10, 0)
+except ZeroDivisionError as e:
+    print(e)  # "No se puede realizar division por cero"
+
+try:
+    calculadora_cientifica("raiz", 4, 2)
+except ValueError as e:
+    print(e)  # Mensaje de operación inválida
+
+    class ValidadorPassword:
+    def __init__(self, min_longitud=8, requiere_mayuscula=True, 
+                 requiere_minuscula=True, requiere_numero=True, 
+                 requiere_especial=True):
+        self.min_longitud = min_longitud
+        self.requiere_mayuscula = requiere_mayuscula
+        self.requiere_minuscula = requiere_minuscula
+        self.requiere_numero = requiere_numero
+        self.requiere_especial = requiere_especial
+        self.caracteres_especiales = "!@#$%^&*()_+-=[]{}|;:,.<>?/"
+    
+    def validar(self, password):
+        """
+        Valida password según las reglas configuradas.
+        
+        Retorna: (bool, list) - (es_valido, lista_de_errores)
+        """
+        errores = []
+        
+        # Validar longitud
+        if len(password) < self.min_longitud:
+            errores.append(f"Longitud mínima no cumplida (mínimo {self.min_longitud} caracteres)")
+        
+        # Validar mayúsculas
+        if self.requiere_mayuscula and not any(c.isupper() for c in password):
+            errores.append("Falta al menos una letra mayúscula")
+            
+        # Validar minúsculas  
+        if self.requiere_minuscula and not any(c.islower() for c in password):
+            errores.append("Falta al menos una letra minúscula")
+            
+        # Validar números
+        if self.requiere_numero and not any(c.isdigit() for c in password):
+            errores.append("Falta al menos un número")
+            
+        # Validar caracteres especiales
+        if self.requiere_especial and not any(c in self.caracteres_especiales for c in password):
+            errores.append("Falta al menos un carácter especial")
+        
+        return (len(errores) == 0, errores)
+    
+    def es_fuerte(self, password):
+        """
+        Retorna True si el password tiene al menos 12 caracteres,
+        contiene mayúsculas, minúsculas, números y caracteres especiales.
+        """
+        if len(password) < 12:
+            return False
+            
+        tiene_mayuscula = any(c.isupper() for c in password)
+        tiene_minuscula = any(c.islower() for c in password)
+        tiene_numero = any(c.isdigit() for c in password)
+        tiene_especial = any(c in self.caracteres_especiales for c in password)
+        
+        return tiene_mayuscula and tiene_minuscula and tiene_numero and tiene_especial
+    
+    validador = ValidadorPassword(min_longitud=8)
+print(validador.validar("Abc123!"))         # (False, ['Longitud mínima no cumplida'])
+print(validador.validar("Abc123!@"))        # (True, [])
+print(validador.validar("abcdefgh"))        # (False, ['Falta mayúscula', ...])
+print(validador.es_fuerte("Abc123!@#$Xyz")) # True
+
+class GestorInventario:
+    def __init__(self):
+        """
+        Inicializa el inventario como un diccionario.
+        """
+        self.inventario = {}
+    
+    def agregar_producto(self, codigo, nombre, precio, cantidad, categoria):
+        """Agrega producto. Lanza ValueError si código ya existe."""
+        if codigo in self.inventario:
+            raise ValueError(f"El código {codigo} ya existe en el inventario")
+        
+        if precio <= 0:
+            raise ValueError("El precio debe ser mayor a 0")
+            
+        if cantidad < 0:
+            raise ValueError("La cantidad no puede ser negativa")
+        
+        self.inventario[codigo] = {
+            'nombre': nombre,
+            'precio': precio,
+            'cantidad': cantidad,
+            'categoria': categoria
+        }
+    
+    def actualizar_stock(self, codigo, cantidad_cambio):
+        """
+        Actualiza stock (positivo=añade, negativo=reduce).
+        """
+        if codigo not in self.inventario:
+            raise ValueError(f"Producto con código {codigo} no existe")
+        
+        nueva_cantidad = self.inventario[codigo]['cantidad'] + cantidad_cambio
+        
+        if nueva_cantidad < 0:
+            raise ValueError(f"Stock no puede ser negativo. Stock actual: {self.inventario[codigo]['cantidad']}")
+        
+        self.inventario[codigo]['cantidad'] = nueva_cantidad
+    
+    def buscar_por_categoria(self, categoria):
+        """Retorna lista de tuplas (codigo, nombre, precio) de la categoría."""
+        resultados = []
+        for codigo, datos in self.inventario.items():
+            if datos['categoria'] == categoria:
+                resultados.append((codigo, datos['nombre'], datos['precio']))
+        return resultados
+    
+    def productos_bajo_stock(self, limite=10):
+        """Retorna diccionario {codigo: cantidad} de productos bajo el límite."""
+        bajo_stock = {}
+        for codigo, datos in self.inventario.items():
+            if datos['cantidad'] < limite:  # < límite, no <=
+                bajo_stock[codigo] = datos['cantidad']
+        return bajo_stock
+    
+    def valor_total_inventario(self):
+        """Retorna el valor total del inventario."""
+        total = 0
+        for datos in self.inventario.values():
+            total += datos['precio'] * datos['cantidad']
+        return total
+    
+    def top_productos(self, n=5):
+        """
+        Retorna lista de tuplas (codigo, valor_total) ordenados descendentemente.
+        """
+        productos_valor = []
+        for codigo, datos in self.inventario.items():
+            valor_total = datos['precio'] * datos['cantidad']
+            productos_valor.append((codigo, valor_total))
+        
+        # Ordenar por valor total descendente
+        productos_valor.sort(key=lambda x: x[1], reverse=True)
+        return productos_valor[:n]
+    
+    inv = GestorInventario()
+inv.agregar_producto("P001", "Laptop", 1200.00, 15, "Electrónica")
+inv.agregar_producto("P002", "Mouse", 25.50, 5, "Accesorios")
+inv.agregar_producto("P003", "Teclado", 85.00, 8, "Accesorios")
+
+inv.actualizar_stock("P001", -3)  # Reduce stock
+print(inv.productos_bajo_stock(10))  # {'P002': 5, 'P003': 8}
+print(inv.buscar_por_categoria("Accesorios"))  # [('P002', 'Mouse', 25.5), ...]
+print(inv.valor_total_inventario())  # Suma total
+print(inv.top_productos(2))  # Top 2 productos por valor
+
+def es_bisiesto(anio):
+    """
+    Retorna True si el año es bisiesto.
+    Reglas:
+    - Divisible por 4: bisiesto
+    - EXCEPTO si es divisible por 100: no bisiesto
+    - EXCEPTO si es divisible por 400: bisiesto
+    """
+    return (anio % 4 == 0 and anio % 100 != 0) or (anio % 400 == 0)
+
+def dias_en_mes(mes, anio):
+    """
+    Retorna el número de días en el mes (1-12).
+    Considera años bisiestos para febrero.
+    """
+    if mes < 1 or mes > 12:
+        raise ValueError("Mes debe estar entre 1 y 12")
+    
+    # Meses con 31 días
+    if mes in [1, 3, 5, 7, 8, 10, 12]:
+        return 31
+    # Meses con 30 días
+    elif mes in [4, 6, 9, 11]:
+        return 30
+    # Febrero
+    else:
+        return 29 if es_bisiesto(anio) else 28
+
+def generar_calendario(mes, anio, dia_inicio=0):
+    """
+    Genera una representación string del calendario del mes.
+    dia_inicio: 0=Lunes, 1=Martes, ..., 6=Domingo
+    """
+    # Validar mes
+    if mes < 1 or mes > 12:
+        raise ValueError("Mes debe estar entre 1 y 12")
+    
+    # Validar día de inicio
+    if dia_inicio < 0 or dia_inicio > 6:
+        dia_inicio = 0  # Comportamiento por defecto
+    
+    # Encabezado
+    dias_semana = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"]
+    calendario = " ".join(dias_semana) + "\n"
+    
+    # Obtener días del mes
+    total_dias = dias_en_mes(mes, anio)
+    
+    # Construir calendario
+    linea_actual = ""
+    
+    # Espacios iniciales para el primer día
+    for i in range(dia_inicio):
+        linea_actual += "   "  # 3 espacios por día
+    
+    # Agregar días
+    for dia in range(1, total_dias + 1):
+        # Formatear día con 2 caracteres de ancho
+        dia_str = f"{dia:2}"
+        linea_actual += dia_str + " "
+        
+        # Nueva línea cada 7 días
+        if (dia + dia_inicio) % 7 == 0:
+            calendario += linea_actual.rstrip() + "\n"
+            linea_actual = ""
+    
+    # Agregar última línea si queda contenido
+    if linea_actual:
+        calendario += linea_actual.rstrip()
+    
+    return calendario
+
+print(es_bisiesto(2024))  # True
+print(es_bisiesto(2100))  # False
+print(es_bisiesto(2000))  # True
+print(dias_en_mes(2, 2024))  # 29
+print(dias_en_mes(2, 2023))  # 28
+print(generar_calendario(1, 2024, 0))  # Calendario de enero 2024
+
+def analizar_ventas(ventas):
+    """
+    Analiza lista de diccionarios de ventas.
+    """
+    if not ventas:
+        return {
+            'total_ventas': 0.0,
+            'promedio_por_venta': 0.0,
+            'producto_mas_vendido': '',
+            'venta_mayor': {},
+            'total_descuentos': 0.0
+        }
+    
+    total_ventas = 0.0
+    total_descuentos = 0.0
+    productos_cantidad = {}
+    venta_mayor = None
+    max_valor_venta = 0
+    
+    for venta in ventas:
+        # Calcular valor de venta
+        valor_venta = venta['cantidad'] * venta['precio'] * (1 - venta['descuento'])
+        total_ventas += valor_venta
+        
+        # Calcular descuentos
+        descuento_venta = venta['cantidad'] * venta['precio'] * venta['descuento']
+        total_descuentos += descuento_venta
+        
+        # Producto más vendido (por cantidad)
+        producto = venta['producto']
+        if producto in productos_cantidad:
+            productos_cantidad[producto] += venta['cantidad']
+        else:
+            productos_cantidad[producto] = venta['cantidad']
+        
+        # Venta individual más alta
+        if valor_venta > max_valor_venta:
+            max_valor_venta = valor_venta
+            venta_mayor = venta
+    
+    producto_mas_vendido = max(productos_cantidad.items(), key=lambda x: x[1])[0] if productos_cantidad else ''
+    
+    return {
+        'total_ventas': round(total_ventas, 2),
+        'promedio_por_venta': round(total_ventas / len(ventas), 2),
+        'producto_mas_vendido': producto_mas_vendido,
+        'venta_mayor': venta_mayor,
+        'total_descuentos': round(total_descuentos, 2)
+    }
+
+def encontrar_patrones(numeros):
+    """
+    Encuentra patrones en lista de números.
+    """
+    if len(numeros) < 2:
+        return {
+            'secuencias_ascendentes': 0,
+            'secuencias_descendentes': 0,
+            'longitud_max_ascendente': 0,
+            'longitud_max_descendente': 0,
+            'numeros_repetidos': {}
+        }
+    
+    secuencias_ascendentes = 0
+    secuencias_descendentes = 0
+    longitud_actual_asc = 1
+    longitud_actual_desc = 1
+    longitud_max_asc = 1
+    longitud_max_desc = 1
+    
+    # Contar números repetidos
+    conteo_numeros = {}
+    for num in numeros:
+        conteo_numeros[num] = conteo_numeros.get(num, 0) + 1
+    
+    # Solo incluir números que aparecen más de una vez
+    numeros_repetidos = {num: count for num, count in conteo_numeros.items() if count > 1}
+    
+    # Encontrar secuencias
+    for i in range(1, len(numeros)):
+        # Secuencia ascendente
+        if numeros[i] > numeros[i-1]:
+            longitud_actual_asc += 1
+            if longitud_actual_asc == 2:  # Nueva secuencia
+                secuencias_ascendentes += 1
+        else:
+            longitud_max_asc = max(longitud_max_asc, longitud_actual_asc)
+            longitud_actual_asc = 1
+        
+        # Secuencia descendente
+        if numeros[i] < numeros[i-1]:
+            longitud_actual_desc += 1
+            if longitud_actual_desc == 2:  # Nueva secuencia
+                secuencias_descendentes += 1
+        else:
+            longitud_max_desc = max(longitud_max_desc, longitud_actual_desc)
+            longitud_actual_desc = 1
+    
+    # Actualizar máximos finales
+    longitud_max_asc = max(longitud_max_asc, longitud_actual_asc)
+    longitud_max_desc = max(longitud_max_desc, longitud_actual_desc)
+    
+    return {
+        'secuencias_ascendentes': secuencias_ascendentes,
+        'secuencias_descendentes': secuencias_descendentes,
+        'longitud_max_ascendente': longitud_max_asc,
+        'longitud_max_descendente': longitud_max_desc,
+        'numeros_repetidos': numeros_repetidos
+    }
+
+def simular_crecimiento(principal, tasa_anual, anios, aporte_anual=0):
+    """
+    Simula crecimiento de inversión con interés compuesto.
+    """
+    resultados = []
+    balance = principal
+    
+    for anio in range(1, anios + 1):
+        # Añadir aporte anual al inicio del año
+        balance += aporte_anual
+        
+        # Calcular interés
+        interes_ganado = balance * tasa_anual
+        balance += interes_ganado
+        
+        resultados.append({
+            'anio': anio,
+            'balance': round(balance, 2),
+            'interes_ganado': round(interes_ganado, 2)
+        })
+    
+    return resultados
+
+ventas = [
+    {'producto': 'Laptop', 'cantidad': 2, 'precio': 1000, 'descuento': 0.1},
+    {'producto': 'Mouse', 'cantidad': 10, 'precio': 20, 'descuento': 0.0},
+    {'producto': 'Laptop', 'cantidad': 3, 'precio': 1000, 'descuento': 0.15}
+]
+print(analizar_ventas(ventas))
+
+numeros = [1, 2, 3, 2, 1, 2, 3, 4, 5, 3, 3, 3]
+print(encontrar_patrones(numeros))
+
+print(simular_crecimiento(1000, 0.05, 5, 100))
+
+class ErrorBiblioteca(Exception):
+    """Excepción base para el sistema de biblioteca."""
+    pass
+
+class LibroNoEncontrado(ErrorBiblioteca):
+    """Se lanza cuando un libro no existe en el catálogo."""
+    def __init__(self, isbn):
+        self.isbn = isbn
+        super().__init__(f"Libro con ISBN {isbn} no encontrado")
+
+class LibroNoDisponible(ErrorBiblioteca):
+    """Se lanza cuando no hay copias disponibles."""
+    def __init__(self, isbn, titulo):
+        self.isbn = isbn
+        self.titulo = titulo
+        super().__init__(f"No hay copias disponibles de '{titulo}'")
+
+class UsuarioNoRegistrado(ErrorBiblioteca):
+    """Se lanza cuando el usuario no existe."""
+    def __init__(self, id_usuario):
+        self.id_usuario = id_usuario
+        super().__init__(f"Usuario con ID '{id_usuario}' no está registrado")
+
+class LimitePrestamosExcedido(ErrorBiblioteca):
+    """Se lanza cuando se excede el límite de préstamos."""
+    def __init__(self, id_usuario, limite):
+        self.id_usuario = id_usuario
+        self.limite = limite
+        super().__init__(f"Usuario {id_usuario} excede límite de {limite} préstamos")
+
+class PrestamoVencido(ErrorBiblioteca):
+    """Se lanza para préstamos vencidos."""
+    def __init__(self, id_prestamo, dias_retraso):
+        self.id_prestamo = id_prestamo
+        self.dias_retraso = dias_retraso
+        super().__init__(f"Préstamo {id_prestamo} está vencido por {dias_retraso} días")
+
+        from datetime import datetime, timedelta
+
+class SistemaBiblioteca:
+    """
+    Sistema completo de gestión de biblioteca digital.
+    """
+    
+    def __init__(self, dias_prestamo=14, multa_por_dia=1.0, limite_prestamos=3):
+        """
+        Inicializa el sistema.
+        """
+        self.dias_prestamo = dias_prestamo
+        self.multa_por_dia = multa_por_dia
+        self.limite_prestamos = limite_prestamos
+        
+        # Estructuras de datos
+        self.catalogo = {}  # {isbn: {datos_libro}}
+        self.usuarios = {}  # {id_usuario: {datos_usuario}}
+        self.prestamos = {}  # {id_prestamo: {datos_prestamo}}
+        self.contador_prestamos = 0
+    
+    # ============ GESTIÓN DE CATÁLOGO ============
+    
+    def agregar_libro(self, isbn, titulo, autor, anio, categoria, copias):
+        """
+        Agrega un libro al catálogo.
+        """
+        # Validaciones
+        if not isinstance(isbn, str) or len(isbn) != 13 or not isbn.isdigit():
+            raise ValueError("ISBN debe ser string de 13 dígitos")
+        
+        if not titulo or not autor:
+            raise ValueError("Título y autor no pueden estar vacíos")
+        
+        anio_actual = datetime.now().year
+        if anio < 1000 or anio > anio_actual:
+            raise ValueError(f"Año debe estar entre 1000 y {anio_actual}")
+        
+        if copias < 1:
+            raise ValueError("Debe haber al menos 1 copia")
+        
+        if isbn in self.catalogo:
+            raise KeyError(f"ISBN {isbn} ya existe en el catálogo")
+        
+        self.catalogo[isbn] = {
+            'titulo': titulo,
+            'autor': autor,
+            'anio': anio,
+            'categoria': categoria,
+            'copias_total': copias,
+            'copias_disponibles': copias
+        }
+    
+    def actualizar_copias(self, isbn, cantidad_cambio):
+        """
+        Actualiza número de copias (añade o remueve).
+        """
+        if isbn not in self.catalogo:
+            raise LibroNoEncontrado(isbn)
+        
+        nueva_cantidad = self.catalogo[isbn]['copias_disponibles'] + cantidad_cambio
+        
+        if nueva_cantidad < 0:
+            raise ValueError(f"No se pueden remover {abs(cantidad_cambio)} copias. Disponibles: {self.catalogo[isbn]['copias_disponibles']}")
+        
+        if nueva_cantidad > self.catalogo[isbn]['copias_total']:
+            self.catalogo[isbn]['copias_total'] = nueva_cantidad
+        
+        self.catalogo[isbn]['copias_disponibles'] = nueva_cantidad
+    
+    def buscar_libros(self, criterio='titulo', valor='', categoria=None):
+        """
+        Busca libros por diferentes criterios.
+        """
+        resultados = []
+        valor = valor.lower()
+        
+        for isbn, libro in self.catalogo.items():
+            # Aplicar filtro de categoría
+            if categoria and libro['categoria'] != categoria:
+                continue
+            
+            # Aplicar filtro de búsqueda
+            if criterio == 'titulo' and valor in libro['titulo'].lower():
+                resultados.append({
+                    'isbn': isbn,
+                    'titulo': libro['titulo'],
+                    'autor': libro['autor'],
+                    'anio': libro['anio'],
+                    'categoria': libro['categoria'],
+                    'copias_disponibles': libro['copias_disponibles']
+                })
+            elif criterio == 'autor' and valor in libro['autor'].lower():
+                resultados.append({
+                    'isbn': isbn,
+                    'titulo': libro['titulo'],
+                    'autor': libro['autor'],
+                    'anio': libro['anio'],
+                    'categoria': libro['categoria'],
+                    'copias_disponibles': libro['copias_disponibles']
+                })
+            elif criterio == 'anio' and str(libro['anio']) == valor:
+                resultados.append({
+                    'isbn': isbn,
+                    'titulo': libro['titulo'],
+                    'autor': libro['autor'],
+                    'anio': libro['anio'],
+                    'categoria': libro['categoria'],
+                    'copias_disponibles': libro['copias_disponibles']
+                })
+        
+        return resultados
+    
+    # ============ GESTIÓN DE USUARIOS ============
+    
+    def registrar_usuario(self, id_usuario, nombre, email):
+        """
+        Registra un nuevo usuario.
+        """
+        if not nombre:
+            raise ValueError("El nombre no puede estar vacío")
+        
+        if '@' not in email or '.' not in email.split('@')[1]:
+            raise ValueError("Email debe contener '@' y dominio con '.'")
+        
+        if id_usuario in self.usuarios:
+            raise ValueError(f"Usuario con ID {id_usuario} ya existe")
+        
+        self.usuarios[id_usuario] = {
+            'nombre': nombre,
+            'email': email,
+            'fecha_registro': datetime.now(),
+            'prestamos_activos': [],  # Lista de IDs de préstamos activos
+            'historial': [],  # Historial de préstamos completados
+            'multas_pendientes': 0.0
+        }
+    
+    def obtener_estado_usuario(self, id_usuario):
+        """
+        Obtiene estado completo del usuario.
+        """
+        if id_usuario not in self.usuarios:
+            raise UsuarioNoRegistrado(id_usuario)
+        
+        usuario = self.usuarios[id_usuario]
+        
+        return {
+            'nombre': usuario['nombre'],
+            'prestamos_activos': len(usuario['prestamos_activos']),
+            'puede_prestar': (len(usuario['prestamos_activos']) < self.limite_prestamos and 
+                             usuario['multas_pendientes'] <= 50),
+            'multas_pendientes': usuario['multas_pendientes']
+        }
+    
+    # ============ GESTIÓN DE PRÉSTAMOS ============
+    
+    def _generar_id_prestamo(self):
+        """Genera ID único para préstamo."""
+        self.contador_prestamos += 1
+        return f"P{self.contador_prestamos:06d}"
+    
+    def prestar_libro(self, isbn, id_usuario):
+        """
+        Realiza un préstamo.
+        """
+        # Validar usuario
+        if id_usuario not in self.usuarios:
+            raise UsuarioNoRegistrado(id_usuario)
+        
+        # Validar libro
+        if isbn not in self.catalogo:
+            raise LibroNoEncontrado(isbn)
+        
+        libro = self.catalogo[isbn]
+        usuario = self.usuarios[id_usuario]
+        
+        # Validar disponibilidad
+        if libro['copias_disponibles'] < 1:
+            raise LibroNoDisponible(isbn, libro['titulo'])
+        
+        # Validar límite de préstamos
+        if len(usuario['prestamos_activos']) >= self.limite_prestamos:
+            raise LimitePrestamosExcedido(id_usuario, self.limite_prestamos)
+        
+        # Validar multas pendientes
+        if usuario['multas_pendientes'] > 50:
+            raise ValueError(f"Usuario tiene multas pendientes de ${usuario['multas_pendientes']}. Debe pagarlas para realizar nuevos préstamos.")
+        
+        # Crear préstamo
+        id_prestamo = self._generar_id_prestamo()
+        fecha_prestamo = datetime.now()
+        fecha_vencimiento = fecha_prestamo + timedelta(days=self.dias_prestamo)
+        
+        self.prestamos[id_prestamo] = {
+            'isbn': isbn,
+            'id_usuario': id_usuario,
+            'fecha_prestamo': fecha_prestamo,
+            'fecha_vencimiento': fecha_vencimiento,
+            'fecha_devolucion': None,
+            'multa': 0.0
+        }
+        
+        # Actualizar estado
+        libro['copias_disponibles'] -= 1
+        usuario['prestamos_activos'].append(id_prestamo)
+        
+        return id_prestamo
+    
+    def devolver_libro(self, id_prestamo):
+        """
+        Procesa devolución de libro.
+        """
+        if id_prestamo not in self.prestamos:
+            raise KeyError(f"Préstamo {id_prestamo} no existe")
+        
+        prestamo = self.prestamos[id_prestamo]
+        
+        if prestamo['fecha_devolucion'] is not None:
+            raise ValueError(f"Préstamo {id_prestamo} ya fue devuelto")
+        
+        # Calcular retraso y multa
+        fecha_devolucion = datetime.now()
+        prestamo['fecha_devolucion'] = fecha_devolucion
+        
+        dias_retraso = 0
+        multa = 0.0
+        
+        if fecha_devolucion > prestamo['fecha_vencimiento']:
+            dias_retraso = (fecha_devolucion - prestamo['fecha_vencimiento']).days
+            multa = dias_retraso * self.multa_por_dia
+            prestamo['multa'] = multa
+            
+            # Añadir multa al usuario
+            usuario = self.usuarios[prestamo['id_usuario']]
+            usuario['multas_pendientes'] += multa
+        
+        # Actualizar estado del libro
+        isbn = prestamo['isbn']
+        self.catalogo[isbn]['copias_disponibles'] += 1
+        
+        # Actualizar estado del usuario
+        usuario = self.usuarios[prestamo['id_usuario']]
+        usuario['prestamos_activos'].remove(id_prestamo)
+        usuario['historial'].append(id_prestamo)
+        
+        mensaje = "Devolución a tiempo" if dias_retraso == 0 else f"Devolución con {dias_retraso} días de retraso"
+        
+        return {
+            'dias_retraso': dias_retraso,
+            'multa': multa,
+            'mensaje': mensaje
+        }
+    
+    def renovar_prestamo(self, id_prestamo):
+        """
+        Renueva préstamo por otros N días (si no está vencido).
+        """
+        if id_prestamo not in self.prestamos:
+            raise KeyError(f"Préstamo {id_prestamo} no existe")
+        
+        prestamo = self.prestamos[id_prestamo]
+        
+        if prestamo['fecha_devolucion'] is not None:
+            raise ValueError("No se puede renovar un préstamo ya devuelto")
+        
+        # Verificar si está vencido
+        if datetime.now() > prestamo['fecha_vencimiento']:
+            dias_retraso = (datetime.now() - prestamo['fecha_vencimiento']).days
+            raise PrestamoVencido(id_prestamo, dias_retraso)
+        
+        # Renovar préstamo
+        prestamo['fecha_vencimiento'] += timedelta(days=self.dias_prestamo)
+        
+        return f"Préstamo renovado hasta {prestamo['fecha_vencimiento'].strftime('%Y-%m-%d')}"
+    
+    # ============ ESTADÍSTICAS Y REPORTES ============
+    
+    def libros_mas_prestados(self, n=10):
+        """
+        Retorna los N libros más prestados.
+        """
+        # Contar préstamos por libro
+        prestamos_por_libro = {}
+        
+        for prestamo in self.prestamos.values():
+            isbn = prestamo['isbn']
+            if isbn in prestamos_por_libro:
+                prestamos_por_libro[isbn] += 1
+            else:
+                prestamos_por_libro[isbn] = 1
+        
+        # Ordenar y formatear resultados
+        resultados = []
+        for isbn, count in sorted(prestamos_por_libro.items(), key=lambda x: x[1], reverse=True)[:n]:
+            libro = self.catalogo[isbn]
+            resultados.append((isbn, libro['titulo'], count))
+        
+        return resultados
+    
+    def usuarios_mas_activos(self, n=5):
+        """
+        Retorna los N usuarios más activos (más préstamos históricos).
+        """
+        # Contar préstamos históricos por usuario
+        prestamos_por_usuario = {}
+        
+        for prestamo in self.prestamos.values():
+            id_usuario = prestamo['id_usuario']
+            if id_usuario in prestamos_por_usuario:
+                prestamos_por_usuario[id_usuario] += 1
+            else:
+                prestamos_por_usuario[id_usuario] = 1
+        
+        # Ordenar y formatear resultados
+        resultados = []
+        for id_usuario, count in sorted(prestamos_por_usuario.items(), key=lambda x: x[1], reverse=True)[:n]:
+            usuario = self.usuarios[id_usuario]
+            resultados.append((id_usuario, usuario['nombre'], count))
+        
+        return resultados
+    
+    def estadisticas_categoria(self, categoria):
+        """
+        Genera estadísticas de una categoría.
+        """
+        total_libros = 0
+        total_copias = 0
+        copias_prestadas = 0
+        libro_mas_popular = None
+        max_prestamos = 0
+        
+        # Contar préstamos por libro en la categoría
+        prestamos_por_libro = {}
+        for prestamo in self.prestamos.values():
+            isbn = prestamo['isbn']
+            libro = self.catalogo.get(isbn)
+            if libro and libro['categoria'] == categoria:
+                prestamos_por_libro[isbn] = prestamos_por_libro.get(isbn, 0) + 1
+        
+        # Calcular estadísticas
+        for isbn, libro in self.catalogo.items():
+            if libro['categoria'] == categoria:
+                total_libros += 1
+                total_copias += libro['copias_total']
+                copias_prestadas += (libro['copias_total'] - libro['copias_disponibles'])
+                
+                # Encontrar libro más popular
+                prestamos_libro = prestamos_por_libro.get(isbn, 0)
+                if prestamos_libro > max_prestamos:
+                    max_prestamos = prestamos_libro
+                    libro_mas_popular = libro['titulo']
+        
+        tasa_prestamo = (copias_prestadas / total_copias * 100) if total_copias > 0 else 0
+        
+        return {
+            'total_libros': total_libros,
+            'total_copias': total_copias,
+            'copias_prestadas': copias_prestadas,
+            'tasa_prestamo': round(tasa_prestamo, 2),
+            'libro_mas_popular': libro_mas_popular or "No hay préstamos"
+        }
+    
+    def prestamos_vencidos(self):
+        """
+        Lista préstamos actualmente vencidos.
+        """
+        vencidos = []
+        ahora = datetime.now()
+        
+        for id_prestamo, prestamo in self.prestamos.items():
+            if (prestamo['fecha_devolucion'] is None and 
+                ahora > prestamo['fecha_vencimiento']):
+                
+                dias_retraso = (ahora - prestamo['fecha_vencimiento']).days
+                multa_acumulada = dias_retraso * self.multa_por_dia
+                libro = self.catalogo[prestamo['isbn']]
+                
+                vencidos.append({
+                    'id_prestamo': id_prestamo,
+                    'isbn': prestamo['isbn'],
+                    'titulo': libro['titulo'],
+                    'id_usuario': prestamo['id_usuario'],
+                    'dias_retraso': dias_retraso,
+                    'multa_acumulada': multa_acumulada
+                })
+        
+        return vencidos
+    
+    def reporte_financiero(self, fecha_inicio=None, fecha_fin=None):
+        """
+        Genera reporte financiero de multas.
+        """
+        total_multas = 0.0
+        multas_pagadas = 0.0
+        prestamos_con_multa = 0
+        
+        # Si no se especifican fechas, usar todo el historial
+        if fecha_inicio is None:
+            fecha_inicio = datetime.min
+        if fecha_fin is None:
+            fecha_fin = datetime.now()
+        
+        # Calcular multas
+        for prestamo in self.prestamos.values():
+            if prestamo['fecha_prestamo'] >= fecha_inicio and prestamo['fecha_prestamo'] <= fecha_fin:
+                if prestamo['multa'] > 0:
+                    prestamos_con_multa += 1
+                    total_multas += prestamo['multa']
+                    
+                    # Considerar multa como pagada si el préstamo fue devuelto
+                    if prestamo['fecha_devolucion'] is not None:
+                        multas_pagadas += prestamo['multa']
+        
+        # Calcular multas pendientes
+        multas_pendientes = 0.0
+        for usuario in self.usuarios.values():
+            multas_pendientes += usuario['multas_pendientes']
+        
+        promedio_multa = total_multas / prestamos_con_multa if prestamos_con_multa > 0 else 0
+        
+        return {
+            'total_multas': round(total_multas, 2),
+            'multas_pagadas': round(multas_pagadas, 2),
+            'multas_pendientes': round(multas_pendientes, 2),
+            'prestamos_con_multa': prestamos_con_multa,
+            'promedio_multa': round(promedio_multa, 2)
+        }
+    
+    # ============ UTILIDADES JUAN LONDOÑO ============
+    
+    def exportar_catalogo(self, archivo='catalogo.txt'):
+        """
+        Exporta catálogo a archivo de texto.
+        """
+        try:
+            with open(archivo, 'w', encoding='utf-8') as f:
+                for isbn, libro in self.catalogo.items():
+                    linea = f"{isbn}|{libro['titulo']}|{libro['autor']}|{libro['anio']}|{libro['categoria']}|{libro['copias_total']}\n"
+                    f.write(linea)
+            return f"Catálogo exportado exitosamente a {archivo}"
+        except Exception as e:
+            return f"Error al exportar catálogo: {e}"
+    
+    def importar_catalogo(self, archivo='catalogo.txt'):
+        """
+        Importa catálogo desde archivo de texto.
+        """
+        exitosos = 0
+        errores = []
+        
+        try:
+            with open(archivo, 'r', encoding='utf-8') as f:
+                for num_linea, linea in enumerate(f, 1):
+                    linea = linea.strip()
+                    if not linea:
+                        continue
+                    
+                    try:
+                        partes = linea.split('|')
+                        if len(partes) != 6:
+                            errores.append((num_linea, "Formato incorrecto"))
+                            continue
+                        
+                        isbn, titulo, autor, anio_str, categoria, copias_str = partes
+                        
+                        # Validar y convertir datos
+                        if not isbn.isdigit() or len(isbn) != 13:
+                            errores.append((num_linea, "ISBN inválido"))
+                            continue
+                        
+                        anio = int(anio_str)
+                        copias = int(copias_str)
+                        
+                        # Intentar agregar libro (saltar si ya existe)
+                        if isbn not in self.catalogo:
+                            self.agregar_libro(isbn, titulo, autor, anio, categoria, copias)
+                            exitosos += 1
+                        else:
+                            errores.append((num_linea, f"ISBN {isbn} ya existe (saltado)"))
+                    
+                    except ValueError as e:
+                        errores.append((num_linea, f"Error de conversión: {e}"))
+                    except Exception as e:
+                        errores.append((num_linea, f"Error: {e}"))
+            
+            return {'exitosos': exitosos, 'errores': errores}
+        
+        except FileNotFoundError:
+            return {'exitosos': 0, 'errores': [(0, f"Archivo {archivo} no encontrado")]}
+        except Exception as e:
+            return {'exitosos': 0, 'errores': [(0, f"Error al abrir archivo: {e}")]}
+        
+# Pruebas del sistema completo
+def test_sistema_biblioteca():
+    # Crear instancia del sistema
+    biblioteca = SistemaBiblioteca(dias_prestamo=7, multa_por_dia=2.0, limite_prestamos=3)
+
+    # 1. Agregar libros al catálogo
+    biblioteca.agregar_libro("9780134685991", "Effective Python", "Brett Slatkin", 2019, "Programación", 5)
+    biblioteca.agregar_libro("9780135404676", "Python Crash Course", "Eric Matthes", 2019, "Programación", 3)
+    biblioteca.agregar_libro("9781449355739", "Fluent Python", "Luciano Ramalho", 2015, "Programación", 2)
+
+    # 2. Registrar usuarios
+    biblioteca.registrar_usuario("U001", "Ana García", "ana@email.com")
+    biblioteca.registrar_usuario("U002", "Carlos López", "carlos@email.com")
+
+    # 3. Realizar préstamos
+    try:
+        id_p1 = biblioteca.prestar_libro("9780134685991", "U001")
+        id_p2 = biblioteca.prestar_libro("9780135404676", "U001")
+        print(f"Préstamos realizados: {id_p1}, {id_p2}")
+    except ErrorBiblioteca as e:
+        print(f"Error: {e}")
+
+    # 4. Buscar libros
+    resultados = biblioteca.buscar_libros(criterio='autor', valor='python')
+    print(f"Libros encontrados: {len(resultados)}")
+
+    # 5. Devolver con retraso (simular)
+    # Modificar fecha de vencimiento para simular retraso
+    biblioteca.prestamos[id_p1]['fecha_vencimiento'] = datetime.now() - timedelta(days=3)
+    resultado_dev = biblioteca.devolver_libro(id_p1)
+    print(f"Devolución: {resultado_dev}")
+
+    # 6. Estadísticas
+    print("Libros más prestados:", biblioteca.libros_mas_prestados(3))
+    print("Estadísticas Programación:", biblioteca.estadisticas_categoria("Programación"))
+    print("Reporte financiero:", biblioteca.reporte_financiero())
+
+    # 7. Exportar catálogo
+    resultado_export = biblioteca.exportar_catalogo("catalogo_backup.txt")
+    print(resultado_export)
+
+    # 8. Manejo de excepciones específicas
+    try:
+        biblioteca.prestar_libro("9999999999999", "U001")  # ISBN no existe
+    except LibroNoEncontrado as e:
+        print(f"Capturado correctamente: {e}")
+
+    try:
+        for i in range(5):
+            biblioteca.prestar_libro("9780134685991", "U002")  # Exceder límite
+    except LimitePrestamosExcedido as e:
+        print(f"Límite controlado: {e}")
+
+# Ejecutar pruebas
+test_sistema_biblioteca()
+

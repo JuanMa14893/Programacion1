@@ -1,0 +1,578 @@
+
+class ErrorRestaurante(Exception):
+    """Excepción base para el sistema de restaurante."""
+    pass
+
+class PlatoNoEncontrado(ErrorRestaurante):
+    """Se lanza cuando un plato no existe en el menú."""
+    def __init__(self, codigo_plato):
+        self.codigo_plato = codigo_plato
+        super().__init__(f"Plato con código '{codigo_plato}' no encontrado en el menú")
+
+class MesaNoDisponible(ErrorRestaurante):
+    """Se lanza cuando la mesa está ocupada."""
+    def __init__(self, numero_mesa, hora_disponible):
+        self.numero_mesa = numero_mesa
+        self.hora_disponible = hora_disponible
+        super().__init__(f"Mesa {numero_mesa} no disponible. Disponible a las {hora_disponible}")
+
+class CapacidadExcedida(ErrorRestaurante):
+    """Se lanza cuando hay más comensales que capacidad."""
+    def __init__(self, numero_mesa, capacidad, comensales):
+        self.numero_mesa = numero_mesa
+        self.capacidad = capacidad
+        self.comensales = comensales
+        super().__init__(f"Mesa {numero_mesa} tiene capacidad para {capacidad}, se solicitaron {comensales} lugares")
+
+class PedidoInvalido(ErrorRestaurante):
+    """Se lanza para pedidos con problemas."""
+    def __init__(self, razon):
+        self.razon = razon
+        super().__init__(f"Pedido inválido: {razon}")
+
+        from datetime import datetime, time
+import json
+
+class SistemaRestaurante:
+    """
+    Sistema completo de gestión de restaurante.
+    """
+    
+    def __init__(self, num_mesas=10, tasa_impuesto=0.16, propina_sugerida=0.15):
+        """
+        Inicializa el sistema.
+        """
+        self.num_mesas = num_mesas
+        self.tasa_impuesto = tasa_impuesto
+        self.propina_sugerida = propina_sugerida
+        
+        # Estructuras de datos
+        self.menu = {}  # {codigo: {'nombre', 'categoria', 'precio', 'disponible'}}
+        self.mesas = {}  # {numero: {'capacidad', 'ocupada', 'reservacion', 'pedido_actual'}}
+        self.pedidos = {}  # {id_pedido: {'mesa', 'items', 'subtotal', 'propina', 'impuesto', 'total', 'hora', 'pagado'}}
+        self.ventas_dia = []  # lista de ids de pedidos completados
+        self.contador_pedidos = 0
+        
+        # Inicializar mesas
+        for i in range(1, num_mesas + 1):
+            self.mesas[i] = {
+                'capacidad': 4,  # capacidad por defecto
+                'ocupada': False,
+                'reservacion': None,
+                'pedido_actual': None
+            }
+    
+    # ============ GESTIÓN DE MENÚ ============
+    
+    def agregar_plato(self, codigo, nombre, categoria, precio):
+        """
+        Agrega un plato al menú.
+        """
+        # Validaciones
+        if not codigo or not isinstance(codigo, str):
+            raise ValueError("Código no puede estar vacío y debe ser string")
+        
+        if not nombre or not isinstance(nombre, str):
+            raise ValueError("Nombre no puede estar vacío")
+        
+        categorias_validas = ["entrada", "plato_fuerte", "postre", "bebida"]
+        if categoria not in categorias_validas:
+            raise ValueError(f"Categoría debe ser una de: {', '.join(categorias_validas)}")
+        
+        if not isinstance(precio, (int, float)) or precio <= 0:
+            raise ValueError("Precio debe ser un número mayor a 0")
+        
+        if codigo in self.menu:
+            raise KeyError(f"El código {codigo} ya existe en el menú")
+        
+        self.menu[codigo] = {
+            'nombre': nombre,
+            'categoria': categoria,
+            'precio': float(precio),
+            'disponible': True
+        }
+    
+    def cambiar_disponibilidad(self, codigo, disponible):
+        """
+        Cambia disponibilidad de un plato.
+        """
+        if codigo not in self.menu:
+            raise PlatoNoEncontrado(codigo)
+        
+        self.menu[codigo]['disponible'] = disponible
+    
+    def buscar_platos(self, categoria=None, precio_max=None):
+        """
+        Busca platos por criterios.
+        """
+        resultados = []
+        
+        for codigo, plato in self.menu.items():
+            # Filtrar por disponibilidad
+            if not plato['disponible']:
+                continue
+            
+            # Filtrar por categoría
+            if categoria and plato['categoria'] != categoria:
+                continue
+            
+            # Filtrar por precio máximo
+            if precio_max is not None and plato['precio'] > precio_max:
+                continue
+            
+            resultados.append({
+                'codigo': codigo,
+                'nombre': plato['nombre'],
+                'categoria': plato['categoria'],
+                'precio': plato['precio'],
+                'disponible': plato['disponible']
+            })
+        
+        return resultados
+    
+    # ============ GESTIÓN DE MESAS ============
+    
+    def configurar_mesa(self, numero, capacidad):
+        """
+        Configura capacidad de una mesa.
+        """
+        if numero < 1 or numero > self.num_mesas:
+            raise ValueError(f"Número de mesa debe estar entre 1 y {self.num_mesas}")
+        
+        if capacidad < 1 or capacidad > 12:
+            raise ValueError("Capacidad debe estar entre 1 y 12")
+        
+        self.mesas[numero]['capacidad'] = capacidad
+    
+    def reservar_mesa(self, numero, comensales, hora):
+        """
+        Reserva una mesa.
+        """
+        # Validar número de mesa
+        if numero not in self.mesas:
+            raise ValueError(f"Mesa {numero} no existe")
+        
+        mesa = self.mesas[numero]
+        
+        # Validar disponibilidad
+        if mesa['ocupada']:
+            raise MesaNoDisponible(numero, "19:00")  # Hora ejemplo
+        
+        # Validar capacidad
+        if comensales > mesa['capacidad']:
+            raise CapacidadExcedida(numero, mesa['capacidad'], comensales)
+        
+        # Validar formato de hora
+        try:
+            datetime.strptime(hora, "%H:%M")
+        except ValueError:
+            raise ValueError("Hora debe estar en formato HH:MM")
+        
+        # Reservar mesa
+        mesa['ocupada'] = True
+        mesa['reservacion'] = {
+            'comensales': comensales,
+            'hora': hora
+        }
+    
+    def liberar_mesa(self, numero):
+        """
+        Libera una mesa (termina servicio).
+        """
+        if numero not in self.mesas:
+            raise ValueError(f"Mesa {numero} no existe")
+        
+        if not self.mesas[numero]['ocupada']:
+            raise ValueError(f"Mesa {numero} no está ocupada")
+        
+        # Liberar mesa
+        self.mesas[numero]['ocupada'] = False
+        self.mesas[numero]['reservacion'] = None
+        self.mesas[numero]['pedido_actual'] = None
+    
+    def mesas_disponibles(self, comensales):
+        """
+        Lista mesas disponibles para N comensales.
+        """
+        disponibles = []
+        
+        for numero, mesa in self.mesas.items():
+            if not mesa['ocupada'] and mesa['capacidad'] >= comensales:
+                disponibles.append(numero)
+        
+        return disponibles
+    
+    # ============ GESTIÓN DE PEDIDOS ============
+    
+    def _generar_id_pedido(self):
+        """Genera ID único para pedido."""
+        self.contador_pedidos += 1
+        timestamp = datetime.now().strftime("%H%M%S")
+        return f"PED{timestamp}{self.contador_pedidos:03d}"
+    
+    def crear_pedido(self, numero_mesa):
+        """
+        Crea un nuevo pedido para una mesa.
+        """
+        # Validar mesa
+        if numero_mesa not in self.mesas:
+            raise ValueError(f"Mesa {numero_mesa} no existe")
+        
+        mesa = self.mesas[numero_mesa]
+        
+        # Validar que esté ocupada
+        if not mesa['ocupada']:
+            raise ValueError(f"Mesa {numero_mesa} no está ocupada")
+        
+        # Validar que no tenga pedido activo
+        if mesa['pedido_actual'] is not None:
+            raise ValueError(f"Mesa {numero_mesa} ya tiene un pedido activo")
+        
+        # Crear pedido
+        id_pedido = self._generar_id_pedido()
+        
+        self.pedidos[id_pedido] = {
+            'mesa': numero_mesa,
+            'items': {},  # {codigo_plato: cantidad}
+            'subtotal': 0.0,
+            'propina': 0.0,
+            'impuesto': 0.0,
+            'total': 0.0,
+            'hora': datetime.now(),
+            'pagado': False
+        }
+        
+        # Asignar pedido a mesa
+        mesa['pedido_actual'] = id_pedido
+        
+        return id_pedido
+    
+    def agregar_item(self, id_pedido, codigo_plato, cantidad=1):
+        """
+        Agrega items al pedido.
+        """
+        # Validar pedido
+        if id_pedido not in self.pedidos:
+            raise PedidoInvalido(f"Pedido {id_pedido} no existe")
+        
+        pedido = self.pedidos[id_pedido]
+        
+        # Validar que no esté pagado
+        if pedido['pagado']:
+            raise PedidoInvalido(f"Pedido {id_pedido} ya está pagado")
+        
+        # Validar plato
+        if codigo_plato not in self.menu:
+            raise PlatoNoEncontrado(codigo_plato)
+        
+        plato = self.menu[codigo_plato]
+        
+        # Validar disponibilidad
+        if not plato['disponible']:
+            raise ValueError(f"Plato {codigo_plato} no está disponible")
+        
+        # Validar cantidad
+        if not isinstance(cantidad, int) or cantidad <= 0:
+            raise ValueError("Cantidad debe ser un entero mayor a 0")
+        
+        # Agregar item al pedido
+        if codigo_plato in pedido['items']:
+            pedido['items'][codigo_plato] += cantidad
+        else:
+            pedido['items'][codigo_plato] = cantidad
+        
+        # Recalcular subtotal
+        self._recalcular_totales(id_pedido)
+    
+    def _recalcular_totales(self, id_pedido):
+        """Recalcula los totales del pedido."""
+        pedido = self.pedidos[id_pedido]
+        subtotal = 0.0
+        
+        for codigo_plato, cantidad in pedido['items'].items():
+            precio = self.menu[codigo_plato]['precio']
+            subtotal += precio * cantidad
+        
+        pedido['subtotal'] = subtotal
+        pedido['impuesto'] = subtotal * self.tasa_impuesto
+        pedido['propina'] = subtotal * self.propina_sugerida
+        pedido['total'] = subtotal + pedido['impuesto'] + pedido['propina']
+    
+    def calcular_total(self, id_pedido, propina_porcentaje=None):
+        """
+        Calcula total del pedido.
+        """
+        if id_pedido not in self.pedidos:
+            raise PedidoInvalido(f"Pedido {id_pedido} no existe")
+        
+        pedido = self.pedidos[id_pedido]
+        
+        # Usar propina sugerida si no se especifica
+        if propina_porcentaje is None:
+            propina_porcentaje = self.propina_sugerida
+        
+        # Calcular con propina específica
+        subtotal = pedido['subtotal']
+        impuesto = subtotal * self.tasa_impuesto
+        propina = subtotal * propina_porcentaje
+        total = subtotal + impuesto + propina
+        
+        return {
+            'subtotal': round(subtotal, 2),
+            'impuesto': round(impuesto, 2),
+            'propina': round(propina, 2),
+            'total': round(total, 2)
+        }
+    
+    def pagar_pedido(self, id_pedido, propina_porcentaje=None):
+        """
+        Procesa pago del pedido.
+        """
+        if id_pedido not in self.pedidos:
+            raise PedidoInvalido(f"Pedido {id_pedido} no existe")
+        
+        pedido = self.pedidos[id_pedido]
+        
+        if pedido['pagado']:
+            raise PedidoInvalido(f"Pedido {id_pedido} ya está pagado")
+        
+        # Calcular totales con propina específica si se proporciona
+        if propina_porcentaje is not None:
+            totales = self.calcular_total(id_pedido, propina_porcentaje)
+            pedido.update(totales)
+            pedido['propina'] = totales['propina']  # Actualizar propina específica
+        
+        # Marcar como pagado
+        pedido['pagado'] = True
+        
+        # Agregar a ventas del día
+        self.ventas_dia.append(id_pedido)
+        
+        # Liberar pedido de la mesa
+        mesa_numero = pedido['mesa']
+        self.mesas[mesa_numero]['pedido_actual'] = None
+        
+        return self.calcular_total(id_pedido, propina_porcentaje)
+    
+    # ============ REPORTES Y ESTADÍSTICAS ============
+    
+    def platos_mas_vendidos(self, n=5):
+        """
+        Retorna los N platos más vendidos del día.
+        """
+        ventas_platos = {}
+        
+        for id_pedido in self.ventas_dia:
+            pedido = self.pedidos[id_pedido]
+            for codigo_plato, cantidad in pedido['items'].items():
+                if codigo_plato in ventas_platos:
+                    ventas_platos[codigo_plato] += cantidad
+                else:
+                    ventas_platos[codigo_plato] = cantidad
+        
+        # Ordenar por cantidad descendente
+        resultados = []
+        for codigo, cantidad in sorted(ventas_platos.items(), key=lambda x: x[1], reverse=True)[:n]:
+            nombre = self.menu[codigo]['nombre']
+            resultados.append((codigo, nombre, cantidad))
+        
+        return resultados
+    
+    def ventas_por_categoria(self):
+        """
+        Calcula ventas totales por categoría.
+        """
+        ventas_categoria = {
+            'entrada': 0.0,
+            'plato_fuerte': 0.0,
+            'postre': 0.0,
+            'bebida': 0.0
+        }
+        
+        for id_pedido in self.ventas_dia:
+            pedido = self.pedidos[id_pedido]
+            for codigo_plato, cantidad in pedido['items'].items():
+                plato = self.menu[codigo_plato]
+                categoria = plato['categoria']
+                ventas_categoria[categoria] += plato['precio'] * cantidad
+        
+        # Redondear valores
+        for categoria in ventas_categoria:
+            ventas_categoria[categoria] = round(ventas_categoria[categoria], 2)
+        
+        return ventas_categoria
+    
+    def reporte_ventas_dia(self):
+        """
+        Genera reporte completo de ventas del día.
+        """
+        total_pedidos = len(self.ventas_dia)
+        subtotal_ventas = 0.0
+        total_impuestos = 0.0
+        total_propinas = 0.0
+        total_ingresos = 0.0
+        
+        for id_pedido in self.ventas_dia:
+            pedido = self.pedidos[id_pedido]
+            subtotal_ventas += pedido['subtotal']
+            total_impuestos += pedido['impuesto']
+            total_propinas += pedido['propina']
+            total_ingresos += pedido['total']
+        
+        # Calcular ticket promedio
+        ticket_promedio = total_ingresos / total_pedidos if total_pedidos > 0 else 0
+        
+        # Obtener plato más vendido
+        platos_vendidos = self.platos_mas_vendidos(1)
+        plato_mas_vendido = platos_vendidos[0][1] if platos_vendidos else "No hay ventas"
+        
+        return {
+            'total_pedidos': total_pedidos,
+            'subtotal_ventas': round(subtotal_ventas, 2),
+            'total_impuestos': round(total_impuestos, 2),
+            'total_propinas': round(total_propinas, 2),
+            'total_ingresos': round(total_ingresos, 2),
+            'ticket_promedio': round(ticket_promedio, 2),
+            'plato_mas_vendido': plato_mas_vendido
+        }
+    
+    def estado_restaurante(self):
+        """
+        Estado actual del restaurante.
+        """
+        mesas_ocupadas = sum(1 for mesa in self.mesas.values() if mesa['ocupada'])
+        mesas_disponibles = self.num_mesas - mesas_ocupadas
+        
+        pedidos_activos = sum(1 for pedido in self.pedidos.values() if not pedido['pagado'])
+        pedidos_completados_hoy = len(self.ventas_dia)
+        
+        return {
+            'mesas_ocupadas': mesas_ocupadas,
+            'mesas_disponibles': mesas_disponibles,
+            'pedidos_activos': pedidos_activos,
+            'pedidos_completados_hoy': pedidos_completados_hoy
+        }
+    
+    # ============ UTILIDADES ============
+    
+    def exportar_menu(self, archivo='menu.txt'):
+        """
+        Exporta menú a archivo de texto.
+        """
+        try:
+            with open(archivo, 'w', encoding='utf-8') as f:
+                for codigo, plato in self.menu.items():
+                    linea = f"{codigo}|{plato['nombre']}|{plato['categoria']}|{plato['precio']}|{plato['disponible']}\n"
+                    f.write(linea)
+            return f"Menú exportado exitosamente a {archivo}"
+        except Exception as e:
+            return f"Error al exportar menú: {e}"
+    
+    def importar_menu(self, archivo='menu.txt'):
+        """
+        Importa menú desde archivo de texto.
+        """
+        exitosos = 0
+        errores = []
+        
+        try:
+            with open(archivo, 'r', encoding='utf-8') as f:
+                for num_linea, linea in enumerate(f, 1):
+                    linea = linea.strip()
+                    if not linea:
+                        continue
+                    
+                    try:
+                        partes = linea.split('|')
+                        if len(partes) != 5:
+                            errores.append((num_linea, "Formato incorrecto"))
+                            continue
+                        
+                        codigo, nombre, categoria, precio_str, disponible_str = partes
+                        
+                        # Validar y convertir datos
+                        try:
+                            precio = float(precio_str)
+                        except ValueError:
+                            errores.append((num_linea, "Precio inválido"))
+                            continue
+                        
+                        disponible = disponible_str.lower() == 'true'
+                        
+                        # Intentar agregar plato (saltar si ya existe)
+                        if codigo not in self.menu:
+                            self.agregar_plato(codigo, nombre, categoria, precio)
+                            self.menu[codigo]['disponible'] = disponible
+                            exitosos += 1
+                        else:
+                            errores.append((num_linea, f"Código {codigo} ya existe (saltado)"))
+                    
+                    except ValueError as e:
+                        errores.append((num_linea, f"Error de conversión: {e}"))
+                    except Exception as e:
+                        errores.append((num_linea, f"Error: {e}"))
+            
+            return {'exitosos': exitosos, 'errores': errores}
+        
+        except FileNotFoundError:
+            return {'exitosos': 0, 'errores': [(0, f"Archivo {archivo} no encontrado")]}
+        except Exception as e:
+            return {'exitosos': 0, 'errores': [(0, f"Error al abrir archivo: {e}")]}
+        
+        def test_sistema_restaurante():
+    # Crear sistema
+    restaurante = SistemaRestaurante(num_mesas=5, tasa_impuesto=0.16, propina_sugerida=0.15)
+
+    # Configurar mesas
+    restaurante.configurar_mesa(1, 4)
+    restaurante.configurar_mesa(2, 2)
+    restaurante.configurar_mesa(3, 6)
+
+    # Agregar platos al menú
+    restaurante.agregar_plato("E001", "Ensalada César", "entrada", 85.00)
+    restaurante.agregar_plato("P001", "Filete de Res", "plato_fuerte", 350.00)
+    restaurante.agregar_plato("P002", "Pasta Alfredo", "plato_fuerte", 180.00)
+    restaurante.agregar_plato("D001", "Tiramisú", "postre", 95.00)
+    restaurante.agregar_plato("B001", "Limonada", "bebida", 45.00)
+
+    # Reservar mesa
+    restaurante.reservar_mesa(1, 3, "14:30")
+
+    # Crear pedido
+    id_pedido = restaurante.crear_pedido(1)
+    restaurante.agregar_item(id_pedido, "E001", 2)
+    restaurante.agregar_item(id_pedido, "P001", 2)
+    restaurante.agregar_item(id_pedido, "B001", 3)
+
+    # Calcular y pagar
+    totales = restaurante.calcular_total(id_pedido, propina_porcentaje=0.18)
+    print(f"Total a pagar: ${totales['total']:.2f}")
+
+    resultado_pago = restaurante.pagar_pedido(id_pedido, propina_porcentaje=0.18)
+    print(f"Pago procesado: {resultado_pago}")
+
+    # Liberar mesa
+    restaurante.liberar_mesa(1)
+
+    # Reportes
+    print("Platos más vendidos:", restaurante.platos_mas_vendidos(3))
+    print("Ventas por categoría:", restaurante.ventas_por_categoria())
+    print("Reporte ventas día:", restaurante.reporte_ventas_dia())
+    print("Estado restaurante:", restaurante.estado_restaurante())
+
+    # Exportar menú
+    restaurante.exportar_menu("menu_backup.txt")
+
+    # Manejo de excepciones
+    try:
+        restaurante.agregar_item(id_pedido, "X999", 1)  # Plato no existe
+    except PlatoNoEncontrado as e:
+        print(f"Error: {e}")
+
+    try:
+        restaurante.reservar_mesa(1, 10, "18:00")  # Excede capacidad
+    except CapacidadExcedida as e:
+        print(f"Error: {e}")
+
+# Ejecutar pruebas
+test_sistema_restaurante()
